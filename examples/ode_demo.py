@@ -8,15 +8,15 @@ import torch.nn as nn
 import torch.optim as optim
 
 parser = argparse.ArgumentParser('ODE demo')
-parser.add_argument('--method', type=str, choices=['dopri5', 'adams'], default='dopri5')
-parser.add_argument('--data_size', type=int, default=1000)
-parser.add_argument('--batch_time', type=int, default=10)
-parser.add_argument('--batch_size', type=int, default=20)
-parser.add_argument('--niters', type=int, default=2000)
-parser.add_argument('--test_freq', type=int, default=20)
-parser.add_argument('--viz', action='store_true')
-parser.add_argument('--gpu', type=int, default=0)
-parser.add_argument('--adjoint', action='store_true')
+parser.add_argument('--method', type=str, choices=['dopri5', 'adams'], default='dopri5')#选择求解器
+parser.add_argument('--data_size', type=int, default=1000)#数据集大小，生成多少个训练样本点
+parser.add_argument('--batch_time', type=int, default=10)#时间批次大小，每次训练采样多少个时间点
+parser.add_argument('--batch_size', type=int, default=20)#每次训练使用多少个样本的初始状态
+parser.add_argument('--niters', type=int, default=2000)#迭代次数：总共训练多少轮（梯度更新多少次）
+parser.add_argument('--test_freq', type=int, default=20)#测试频率：每训练多少轮评估一次模型/打印一次日志
+parser.add_argument('--viz', action='store_true')#是否可视化
+parser.add_argument('--gpu', type=int, default=0)#gpu型号：使用哪块 GPU（如果有多张显卡）
+parser.add_argument('--adjoint', action='store_true')#是否使用伴随灵敏度法
 args = parser.parse_args()
 
 if args.adjoint:
