@@ -14,7 +14,7 @@ parser.add_argument('--network', type=str, choices=['resnet', 'odenet'], default
 parser.add_argument('--tol', type=float, default=1e-3)"求解器的误差容限
 parser.add_argument('--adjoint', type=eval, default=False, choices=[True, False])"是否使用伴随法
 parser.add_argument('--downsampling-method', type=str, default='conv', choices=['conv', 'res'])"降采样方法：用普通卷积还是ResBlock
-parser.add_argument('--nepochs', type=int, default=160)"村里的epoch数（完整遍历数据集的次数）
+parser.add_argument('--nepochs', type=int, default=160)"训练的epoch数（完整遍历数据集的次数）
 parser.add_argument('--data_aug', type=eval, default=True, choices=[True, False])"是否使用数据增强
 parser.add_argument('--lr', type=float, default=0.1)"设置的学习率
 parser.add_argument('--batch_size', type=int, default=128)"训练时每批的样本数
