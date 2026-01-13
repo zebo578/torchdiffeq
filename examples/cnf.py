@@ -61,8 +61,9 @@ class CNF(nn.Module):
             dlogp_z_dt = -trace_df_dz(dz_dt, z).view(batchsize, 1)
 
         return (dz_dt, dlogp_z_dt)
-
-
+"这是这个ode系统的核心，其描述了两件事情：状态z的演化，即告诉每个点如何在空中移动；对数概率的演化，即告诉概率密度函数如何变化
+"这里跟踪概率的原因是：当一个面团，被拉伸时其密度减小也即是概率降低（面粉分子分布得少了），反之压缩时，密度也会变大，概率也就会升高
+"这里的trace也就是体积变换的一阶近似
 def trace_df_dz(f, z):
     """Calculates the trace of the Jacobian df/dz.
     Stolen from: https://github.com/rtqichen/ffjord/blob/master/lib/layers/odefunc.py#L13
@@ -72,7 +73,7 @@ def trace_df_dz(f, z):
         sum_diag += torch.autograd.grad(f[:, i].sum(), z, create_graph=True)[0].contiguous()[:, i].contiguous()
 
     return sum_diag.contiguous()
-
+"计算对数概率密度变化率(jacobian矩阵的迹)
 
 class HyperNetwork(nn.Module):
     """Hyper-network allowing f(z(t), t) to change with time.
@@ -108,11 +109,11 @@ class HyperNetwork(nn.Module):
         U = params[self.blocksize:2 * self.blocksize].reshape(self.width, 1, self.in_out_dim)
 
         G = params[2 * self.blocksize:3 * self.blocksize].reshape(self.width, 1, self.in_out_dim)
-        U = U * torch.sigmoid(G)
+        U = U * torch.sigmoid(G)"这是一个技巧，让网络学会"选择性地激活"某些维度。
 
         B = params[3 * self.blocksize:].reshape(self.width, 1, 1)
         return [W, B, U]
-
+"时间相关的权重：这里使用的是超网络，普通node是变化率f固定，但cnf用的超网络是权重随时间变化，也就是让ode在不同时刻有不同的变化率
 
 class RunningAverageMeter(object):
     """Computes and stores the average and current value"""
@@ -170,7 +171,7 @@ if __name__ == '__main__':
         for itr in range(1, args.niters + 1):
             optimizer.zero_grad()
 
-            x, logp_diff_t1 = get_batch(args.num_samples)
+            x, logp_diff_t1 = get_batch(args.num_samples)"采样目标分布：生成512个点，分布在两个同心圆上
 
             z_t, logp_diff_t = odeint(
                 func,
@@ -179,12 +180,12 @@ if __name__ == '__main__':
                 atol=1e-5,
                 rtol=1e-5,
                 method='dopri5',
-            )
+            )"反向ode求解：也就是在问如果这些点在最后时刻是同心圆，那么他们在初始时间的状态应该是什么样的？
 
             z_t0, logp_diff_t0 = z_t[-1], logp_diff_t[-1]
 
-            logp_x = p_z0.log_prob(z_t0).to(device) - logp_diff_t0.view(-1)
-            loss = -logp_x.mean(0)
+            logp_x = p_z0.log_prob(z_t0).to(device) - logp_diff_t0.view(-1)"计算目标分布在模型下的对数概率
+            loss = -logp_x.mean(0)"最小化负对数似然
 
             loss.backward()
             optimizer.step()
@@ -222,7 +223,7 @@ if __name__ == '__main__':
                 atol=1e-5,
                 rtol=1e-5,
                 method='dopri5',
-            )
+            )"正向ode：训练时学会了反向映射（圆--高斯分布），现在用正向映射（高斯--圆）来生成新样本！
 
             # Generate evolution of density
             x = np.linspace(-1.5, 1.5, 100)
@@ -282,5 +283,5 @@ if __name__ == '__main__':
             img, *imgs = [Image.open(f) for f in sorted(glob.glob(os.path.join(args.results_dir, f"cnf-viz-*.jpg")))]
             img.save(fp=os.path.join(args.results_dir, "cnf-viz.gif"), format='GIF', append_images=imgs,
                      save_all=True, duration=250, loop=0)
-
+"可视化内容
         print('Saved visualization animation at {}'.format(os.path.join(args.results_dir, "cnf-viz.gif")))
