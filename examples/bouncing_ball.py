@@ -17,22 +17,22 @@ class BouncingBallExample(nn.Module):
         self.gravity = nn.Parameter(torch.as_tensor([gravity]))
         self.log_radius = nn.Parameter(torch.log(torch.as_tensor([radius])))
         self.t0 = nn.Parameter(torch.tensor([0.0]))
-        self.init_pos = nn.Parameter(torch.tensor([10.0]))
-        self.init_vel = nn.Parameter(torch.tensor([0.0]))
-        self.absorption = nn.Parameter(torch.tensor([0.2]))
+        self.init_pos = nn.Parameter(torch.tensor([10.0]))"初始高度
+        self.init_vel = nn.Parameter(torch.tensor([0.0]))"初始速度
+        self.absorption = nn.Parameter(torch.tensor([0.2]))"能量损失系数
         self.odeint = odeint_adjoint if adjoint else odeint
 
     def forward(self, t, state):
         pos, vel, log_radius = state
-        dpos = vel
-        dvel = -self.gravity
+        dpos = vel"位置变化率=速度
+        dvel = -self.gravity"速度变化率=重力加速度
         return dpos, dvel, torch.zeros_like(log_radius)
 
     def event_fn(self, t, state):
         # positive if ball in mid-air, negative if ball within ground.
         pos, _, log_radius = state
         return pos - torch.exp(log_radius)
-
+"事件函数定义了“碰撞”的数学条件，后面求解ode 时要不断检查even_fn的符号
     def get_initial_state(self):
         state = (self.init_pos, self.init_vel, self.log_radius)
         return self.t0, state
@@ -41,11 +41,11 @@ class BouncingBallExample(nn.Module):
         """Updates state based on an event (collision)."""
         pos, vel, log_radius = state
         pos = (
-            pos + 1e-7
+            pos + 1e-7"这里碰撞后小球位置仍在pos=radius，不加微小偏移会再次触发碰撞条件
         )  # need to add a small eps so as not to trigger the event function immediately.
         vel = -vel * (1 - self.absorption)
         return (pos, vel, log_radius)
-
+"状态更新：碰撞后，速度反转；能量损失
     def get_collision_times(self, nbounces=1):
 
         event_times = []
@@ -62,7 +62,7 @@ class BouncingBallExample(nn.Module):
                 atol=1e-8,
                 rtol=1e-8,
                 odeint_interface=self.odeint,
-            )
+            )"求解ode直至下一次碰撞
             event_times.append(event_t)
 
             state = self.state_update(tuple(s[-1] for s in solution))
@@ -78,12 +78,12 @@ class BouncingBallExample(nn.Module):
         trajectory = [state[0][None]]
         velocity = [state[1][None]]
         times = [t0.reshape(-1)]
-        for event_t in event_times:
+        for event_t in event_times:"在两次碰撞之间生成密集的时间点
             tt = torch.linspace(
                 float(t0), float(event_t), int((float(event_t) - float(t0)) * 50)
             )[1:-1]
             tt = torch.cat([t0.reshape(-1), tt, event_t.reshape(-1)])
-            solution = odeint(self, state, tt, atol=1e-8, rtol=1e-8)
+            solution = odeint(self, state, tt, atol=1e-8, rtol=1e-8)"求解这段时间的轨迹
 
             trajectory.append(solution[0][1:])
             velocity.append(solution[1][1:])
@@ -150,7 +150,7 @@ def gradcheck(nbounces):
 
     print("Gradient check passed.")
 
-
+"梯度验证函数：验证自动微分计算的梯度是否正确。核心思想是一个用pytorch自动微分计算梯度另一个用数值逼近计算，二者相互对比验证
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Process some integers.")
